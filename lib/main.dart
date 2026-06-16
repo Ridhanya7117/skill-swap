@@ -14,7 +14,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/skill_provider.dart';
-import 'screens/browse_screen.dart';
+import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 
 // ── 1. ENTRY POINT ───────────────────────────
@@ -101,7 +101,7 @@ class SkillSwapApp extends StatelessWidget {
 
         // BrowseScreen is the first screen the
         // user sees when they open the app.
-        home: const BrowseScreen(),
+        home: const HomeScreen(),
       ),
     );
   }

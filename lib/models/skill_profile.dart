@@ -259,11 +259,20 @@ class SkillProfile {
     // Don't match with yourself
     if (id == other.id) return false;
 
-    // My want == their teach  (case-insensitive)
+    // My wanted skill matches their teach skill
     final iWantWhatTheyTeach =
         wantToLearnSkill.toLowerCase().trim() ==
         other.canTeachSkill.toLowerCase().trim();
 
-    return iWantWhatTheyTeach;
+    // Learning mode compatibility
+    final modeCompatible =
+        preferredMode == LearningMode.both ||
+        other.preferredMode == LearningMode.both ||
+        preferredMode == other.preferredMode;
+    final levelCompatible =
+        other.canTeachLevel == wantToLearnLevel;
+
+   return iWantWhatTheyTeach && modeCompatible && levelCompatible;
   }
 }
+
