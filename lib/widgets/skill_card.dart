@@ -14,7 +14,9 @@
 // ─────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/skill_profile.dart';
+import '../providers/skill_provider.dart';
 import '../theme/app_theme.dart';
 
 class SkillCard extends StatelessWidget {
@@ -181,6 +183,29 @@ class SkillCard extends StatelessWidget {
             ],
           ),
         ),
+
+        // ── Delete button ────────────────────────
+        // Needs BuildContext to show the dialog, so
+        // it is built inline here rather than in a
+        // separate private method (private methods on
+        // StatelessWidget don't receive context unless
+        // it is passed in explicitly — passing it here
+        // is cleaner for a single-use widget).
+        Builder(
+          builder: (context) => IconButton(
+            // Tight padding keeps the button small so
+            // it doesn't push the avatar or name around.
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              color: AppTheme.textSecondary,
+              size: 20,
+            ),
+            tooltip: 'Delete profile',
+            onPressed: () => _confirmDelete(context),
+          ),
+        ),
       ],
     );
   }
@@ -307,6 +332,120 @@ class SkillCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  // — Confirmation dialog + delete action ──────
+  // async because we await the dialog result and
+  // then await the provider call.
+  Future<void> _confirmDelete(BuildContext context) async {
+    // showDialog returns whatever value was passed
+    // to Navigator.pop() when the dialog closed.
+    // We use a bool: true = confirmed, false/null = cancelled.
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      // barrierDismissible: false means tapping outside
+      // the dialog does NOT close it — the user must
+      // explicitly tap Cancel or Delete.
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        // ── Dialog title ──────────────────────────
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded,
+                color: AppTheme.errorColor, size: 22),
+            SizedBox(width: 8),
+            Text(
+              'Delete Profile?',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        // ── Dialog body ───────────────────────────
+        content: const Text(
+          'Are you sure you want to delete this profile? This action cannot be undone.',
+          style: TextStyle(
+            fontSize: 14,
+            color: AppTheme.textSecondary,
+            height: 1.5,
+          ),
+        ),
+        // ── Dialog buttons ────────────────────────
+        actions: [
+          // Cancel — closes dialog, does nothing
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          // Delete — closes dialog with true
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: AppTheme.errorColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // If the user tapped Cancel (or dismissed), do nothing.
+    if (confirmed != true) return;
+
+    // Guard: if the card's parent widget was removed
+    // from the tree while the dialog was open, the
+    // original context is no longer valid. Attempting
+    // to use it would throw an error.
+    if (!context.mounted) return;
+
+    // Call the provider to remove from memory + storage.
+    // context.read() is used here (not watch/Consumer)
+    // because we only need the provider once for an
+    // action — we are not listening for changes.
+    await context.read<SkillProvider>().deleteProfile(profile.id);
+
+    // Guard again after the async gap — the widget
+    // may have unmounted while deleteProfile() ran.
+    if (!context.mounted) return;
+
+    // Show brief confirmation at the bottom of the screen.
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle_rounded,
+                color: Colors.white, size: 16),
+            SizedBox(width: 8),
+            Text(
+              'Profile deleted',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.textPrimary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 
